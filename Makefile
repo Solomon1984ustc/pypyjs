@@ -62,8 +62,8 @@ PYPY = $(DOCKER) pypy
 lib: ./lib/pypyjs.vm.js
 
 ./lib/pypyjs.vm.js: ./build/pypyjs.vm.js
-	cp ./build/pypyjs.vm.js ./lib/
-	python ./tools/extract_memory_initializer.py ./lib/pypyjs.vm.js
+	cp ./build/pypyjs.vm.* ./lib/
+	#python ./tools/extract_memory_initializer.py ./lib/pypyjs.vm.js
 	python ./tools/compress_memory_initializer.py ./lib/pypyjs.vm.js
 	rm -rf ./lib/modules/
 	python tools/module_bundler.py init ./lib/modules/
@@ -88,7 +88,7 @@ release-debug: ./build/pypyjs-debug-$(VERSION).tar.gz
 	mkdir -p $(RELDIR)/lib
 	# Copy the compiled VM and massage it into the expected shape.
 	cp ./build/$*.vm.js $(RELDIR)/lib/pypyjs.vm.js
-	python ./tools/extract_memory_initializer.py $(RELDIR)/lib/pypyjs.vm.js
+	#python ./tools/extract_memory_initializer.py $(RELDIR)/lib/pypyjs.vm.js
 	python ./tools/compress_memory_initializer.py $(RELDIR)/lib/pypyjs.vm.js
 	# Cromulate for better compressibility, unless it's a debug build.
 	if [ `echo $< | grep -- -debug` ]; then true ; else python ./tools/cromulate.py -w 1000 $(RELDIR)/lib/pypyjs.vm.js ; fi
