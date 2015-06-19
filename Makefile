@@ -28,7 +28,7 @@
 # we run as root, assuming the curdir is under /Users, and hence that
 # boot2docker will automagically share it with appropriate permissions.
 
-DOCKER_IMAGE = rfkelly/pypyjs-build
+DOCKER_IMAGE = trinketio/pypyjs 
 
 DOCKER_ARGS = -ti --rm -v /tmp:/tmp -v $(CURDIR):$(CURDIR) -w $(CURDIR) -e "CFLAGS=$$CFLAGS" -e "LDFLAGS=$$LDFLAGS" -e "EMCFLAGS=$$EMCFLAGS" -e "EMLDFLAGS=$$EMLDFLAGS" -e "IN_DOCKER=1"
 
