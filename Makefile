@@ -91,7 +91,7 @@ release-debug: ./build/pypyjs-debug-$(VERSION).tar.gz
 	#python ./tools/extract_memory_initializer.py $(RELDIR)/lib/pypyjs.vm.js
 	python ./tools/compress_memory_initializer.py $(RELDIR)/lib/pypyjs.vm.js
 	# Cromulate for better compressibility, unless it's a debug build.
-	if [ `echo $< | grep -- -debug` ]; then true ; else python ./tools/cromulate.py -w 1000 $(RELDIR)/lib/pypyjs.vm.js ; fi
+	#if [ `echo $< | grep -- -debug` ]; then true ; else python ./tools/cromulate.py -w 1000 $(RELDIR)/lib/pypy.vm.js ; fi
 	# Copy the supporting JS library code.
 	cp ./lib/pypyjs.js ./lib/README.txt ./lib/*Promise*.js $(RELDIR)/lib/
 	cp -r ./lib/tests $(RELDIR)/lib/tests
