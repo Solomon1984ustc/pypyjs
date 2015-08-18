@@ -8,11 +8,52 @@
 </head>
 <body>
 <textarea id="code" cols="80" rows="24" style="background-color: black; color:green; font-family: monospace">
+# python 2
+
+# John Sherer
+# 6-2-15
+
+import time
+import random
+
+name = "Elliott"
+
+if 0 ==1: 
+  pass  
+else:
+  print 'Welcome, ', name, ', lets play!'
+  their_choice = raw_input('Choose rock, paper, or scissors!')
+  my_choice = random.choice(['rock', 'paper', 'scissors'])
+  print 'I chose ', my_choice, '!'
+  if their_choice == 'rock':
+    if my_choice == 'paper':
+      print 'Looks like I won! Good game!'
+    elif my_choice == 'scissors':
+      print 'Looks like you won! Good game!'
+    else:
+      print 'Looks like a tie! Good game!'
+  elif their_choice == 'paper':
+    if my_choice == 'rock':
+      print 'Looks like you won! Good game!'
+    elif my_choice == 'scissors':
+      print 'Looks like I won! Good game!'
+    else:
+      print 'Looks like a tie! Good game!'
+  elif their_choice == 'scissors':
+    if my_choice == 'paper':
+      print 'Looks like you won! Good game!'
+    elif my_choice == 'rock':
+      print 'Looks like I won! Good game!'
+    else:
+      print 'Looks like a tie! Good game!'
+  else:
+      print 'Sorry, I don\'t understand.'
 </textarea>
 
 <textarea id="out" readonly cols="80" rows="24" style="background-color: black; color:green; font-family: monospace">
 </textarea>
 <br>
 <button id="test">test!</button>
+<button id="run">run!</button>
 </body>
 </html>
