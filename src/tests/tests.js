@@ -3,7 +3,7 @@
 // We should do something a lot nicer than this...
 //
 
-if (typeof vm === 'undefined') {
+if (typeof pypyjs === 'undefined') {
   if (typeof require !== 'undefined') {
     pypyjs = require('../pypyjs.js');
   } else if (typeof loadRelativeToScript !== 'undefined') {
@@ -13,39 +13,40 @@ if (typeof vm === 'undefined') {
   }
 }
 
-var log;
+let log;
 if (typeof console !== 'undefined') {
   log = console.log.bind(console);
 } else {
   log = print;
 }
 
-var toByteArray = function(str) {
-  var byteArray = [];
-  for (var i = 0; i < str.length; i++) {
+const toByteArray = function toByteArray(str) {
+  const byteArray = [];
+  for (let i = 0; i < str.length; i++) {
     if (str.charCodeAt(i) <= 0x7F) {
       byteArray.push(str.charCodeAt(i));
     } else {
-      var h = encodeURIComponent(str.charAt(i)).substr(1).split('%');
-      for (var j = 0; j < h.length; j++) {
+      const h = encodeURIComponent(str.charAt(i)).substr(1).split('%');
+      for (let j = 0; j < h.length; j++) {
         byteArray.push(parseInt(h[j], 16));
       }
     }
   }
+
   return byteArray;
 };
 
-var stdinBuffer = [];
+const stdinBuffer = [];
 
-var vm = new pypyjs({
-  stdin: function() {
+const vm = new pypyjs({
+  stdin: function stdin() {
     if (stdinBuffer.length > 0) {
       return stdinBuffer.pop();
     }
 
-    return new Promise(function(resolve) {
-      setTimeout(function() {
-        var input = toByteArray('test\n');
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const input = toByteArray('test\n');
         input.push(null);
         input.reverse();
         stdinBuffer = input;
@@ -55,53 +56,41 @@ var vm = new pypyjs({
   }
 });
 
-var pypyjsTestResult = vm.ready()
+vm.ready()
 
 // First, check that python-level errors will actually fail the tests.
-.then(function() {
-  return vm.exec("raise ValueError(42)");
-})
-.then(function() {
-  throw new Error("Python exception did not trigger js Error");
-}, function(err) {
-  if (! err instanceof pypyjs.Error) {
-    throw new Error("Python exception didn't trigger vm.Error instance");
+.then(() => vm.exec('raise ValueError(42)'))
+.then(() => { throw new Error('Python exception did not trigger js Error'); },
+(err) => {
+  if (!err instanceof pypyjs.Error) {
+    throw new Error('Python exception didn\'t trigger vm.Error instance');
   }
 
   if (err.name !== 'ValueError' || err.message !== '42') {
-    throw new Error("Python exception didn't trigger correct error info");
+    throw new Error('Python exception didn\'t trigger correct error info');
   }
 })
 
 // Check that the basic set-exec-get cycle works correctly.
-.then(function() {
-  return vm.set("x", 7);
-})
-.then(function() {
-  return vm.exec("x = x * 2");
-})
-.then(function() {
-  return vm.get("x");
-})
-.then(function(x) {
+.then(() => vm.set('x', 7))
+.then(() => vm.exec('x = x * 2'))
+.then(() => vm.get('x'))
+.then((x) => {
   if (x !== 14) {
     throw new Error('set-exec-get cycle failed');
   }
 })
 
 // Check that eval() works correctly.
-.then(function() {
-  return vm.eval("x + 1");
-})
-.then(function(x) {
+.then(() => vm.eval('x + 1'))
+.then((x) => {
   if (x !== 15) {
     throw new Error('eval failed');
   }
 })
-.then(function() {
-  return vm.exec('from time import sleep; sleep(1)');
-}).then(function() {
-  var test = [
+.then(() => vm.exec('from time import sleep; sleep(1)'))
+.then(() => {
+  const test = [
     'from time import sleep',
     'def Test():',
     '    sleep(1)',
@@ -122,8 +111,8 @@ var pypyjsTestResult = vm.ready()
   ].join('\r\n');
 
   return vm.exec(test);
-}).then(function() {
-  var test = [
+}).then(() => {
+  const test = [
     'from time import sleep',
     '',
     'def sleep_decorator(function):',
@@ -146,103 +135,88 @@ var pypyjsTestResult = vm.ready()
 
   return vm.exec(test);
 })
-.then(function() {
-  gp = function() {
-    return new Promise(function(resolve, reject) {
-      setTimeout(function() {
-        resolve('test');
-      }, 1000);
+.then(() => {
+  gp = () => {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve('test'), 1000);
     });
   };
 
-  var test = [
+  const test = [
     'import js',
     'from time import time',
     '',
     'print time()',
-    "get_promise = js.eval('gp')",
+    'get_promise = js.eval(\'gp\')',
     'promise = get_promise()',
     'res = js.await(promise)',
     'print time()',
     'print res',
-    "assert res == 'test'",
+    'assert res == \'test\'',
   ].join('\r\n');
 
   return vm.exec(test);
 })
-.then(function() {
-  gp = function() {
-    return new Promise(function(resolve, reject) {
-      setTimeout(function() {
-        reject(new Error('test!'));
-      }, 1000);
+.then(() => {
+  gp = () => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => reject(new Error('test!')), 1000);
     });
   };
 
-  var test = [
+  const test = [
     'import js',
     'from time import time',
     '',
     'print time()',
-    "get_promise = js.eval('gp')",
+    'get_promise = js.eval(\'gp\')',
     'promise = get_promise()',
     'res = js.await(promise)',
     'print time()',
   ].join('\r\n');
 
   return vm.exec(test);
-}).then(function() {
+}).then(() => {
   throw new Error('Python exception did not trigger js Error');
 },
-
-function(err) {
+(err) => {
   if (!err instanceof pypyjs.Error) {
-    throw new Error("Python exception didn't trigger vm.Error instance");
+    throw new Error('Python exception didn\'t trigger vm.Error instance');
   }
 
   if (err.name !== 'Error' || err.message !== 'Error: test!') {
     console.log(err);
-    throw new Error("Python exception didn't trigger correct error info");
+    throw new Error('Python exception didn\'t trigger correct error info');
   }
 })
 
 // Check that we can read non-existent names and get 'undefined'
-.then(function() {
-  return vm.get("nonExistentName")
-})
-.then(function(x) {
+.then(() => vm.get('nonExistentName'))
+.then((x) => {
   if (typeof x !== 'undefined') {
     throw new Error('name should have been undefined');
   }
 })
 
 // Check that we execute in correctly-__name__'d python scope.
-.then(function() {
-  return vm.exec("assert __name__ == '__main__', __name__")
-})
+.then(() => vm.exec('assert __name__ == \'__main__\', __name__'))
 
 // Check that sys.platform tells us something sensible.
-.then(function() {
-  return vm.exec("import sys; assert sys.platform == 'js'");
-})
+.then(() => vm.exec('import sys; assert sys.platform == \'js\''))
 
 // Check that multi-line exec will work correctly.
-.then(function() {
-  return vm.exec("x = 2\ny = x * 3");
-})
-.then(function() {
-  return vm.get("y")
-})
-.then(function(y) {
+.then(() => vm.exec('x = 2\ny = x * 3'))
+.then(() => vm.get('y'))
+.then((y) => {
   if (y !== 6) {
-    throw new Error("multi-line exec didn't work");
+    throw new Error('multi-line exec didn\'t work');
   }
 })
-.then(function() {
-  var test = [
+.then(() => {
+  const test = [
     'a = raw_input()',
     'print a',
-    "assert a == 'test'",
+    'assert a == \'test\'',
   ].join('\r\n');
   return vm.exec(test);
 })
@@ -256,42 +230,38 @@ function(err) {
   });
 })
 // Check that multi-import statements will work correctly.
-.then(function() {
-  return vm.exec("import os\nimport time\nimport sys\nx=time.time()")
-})
-.then(function() {
-  return vm.get("x")
-})
-.then(function(x) {
+.then(() => vm.exec('import os\nimport time\nimport sys\nx=time.time()'))
+.then(() => vm.get('x'))
+.then((x) => {
   if (!x) {
-    throw new Error("multi-line import didn't work");
+    throw new Error('multi-line import didn\'t work');
   }
 })
 
 // Check that you can create additional VMs using `new`
-.then(function() {
-  var vm2 = new pypyjs()
-  return vm2.exec("x = 17").then(function() {
-    return vm2.get("x")
-  }).then(function(x) {
-    if (x !== 17) {
-      throw new Error("newly-created VM didn't work right")
-    }
-  }).then(function() {
-    return vm2.get("y")
-  }).then(function(y) {
-    if (typeof y !== "undefined") {
-      throw new Error("name should have been undefined in new VM");
-    }
-  })
+.then(() => {
+  const vm2 = new pypyjs();
+  return vm2.exec('x = 17')
+        .then(() => vm2.get('x'))
+        .then((x) => {
+          if (x !== 17) {
+            throw new Error('newly-created VM didn\'t work right');
+          }
+        })
+        .then(() => vm2.get('y'))
+        .then((y) => {
+          if (typeof y !== 'undefined') {
+            throw new Error('name should have been undefined in new VM');
+          }
+        });
 })
 
 // Report success or failure at the end of the chain.
-.then(function(res) {
+.then(() => {
   log('TESTS PASSED!');
 },
 
-function(err) {
+(err) => {
   log('TESTS FAILED!');
   log(err);
   throw err;
