@@ -221,13 +221,11 @@ vm.ready()
   return vm.exec(test);
 })
 
-.then(function() {
-  return vm.addModule("testerdetest", [
-      "import time",
-      "time.sleep(1)"
-    ].join("\r\n")).then (function() {
-    return vm.exec("import testerdetest");
-  });
+.then(() => {
+  return vm.addModule('testerdetest', `
+import time
+time.sleep(1)
+  `).then(() => vm.exec('import testerdetest'));
 })
 // Check that multi-import statements will work correctly.
 .then(() => vm.exec('import os\nimport time\nimport sys\nx=time.time()'))
@@ -266,4 +264,3 @@ vm.ready()
   log(err);
   throw err;
 });
-//# sourceMappingURL=../tests/tests.js.map

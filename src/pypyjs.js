@@ -266,7 +266,9 @@ function pypyjs(opts) {
     const Module = {};
     this._module = Module;
     Module.TOTAL_MEMORY = this.totalMemory;
-
+    Module.resolve = () => {
+      console.log('resolved without subscription');
+    };
     // We will set up the filesystem manually when we're ready.
     Module.noFSInit = true;
     Module.thisProgram = '/lib/pypyjs/pypyjs.js';
@@ -390,11 +392,19 @@ function pypyjs(opts) {
   });
 }
 
+pypyjs.prototype.inJsModules = null;
+
 // A simple file-fetching wrapper around XMLHttpRequest,
 // that treats paths as relative to the pypyjs.js root url.
 //
 pypyjs.prototype.fetch = function fetch(relpath, responseType) {
   const rootURL = this.rootURL || pypyjs.rootURL;
+
+  if (this.inJsModules && this.inJsModules[relpath]) {
+    return new Promise((resolve) => {
+      resolve({ responseText: this.inJsModules[relpath] });
+    });
+  }
 
   // For the web, use XMLHttpRequest.
   if (typeof XMLHttpRequest !== 'undefined') {
@@ -445,8 +455,21 @@ pypyjs.prototype.fetch = function fetch(relpath, responseType) {
   });
 };
 
-pypyjs.resolve = function resolve() {
-  console.log('resolve without subscription');
+pypyjs.prototype.addModuleFromFile = function addModule(name, file) {
+  return this.fetch(file).then((data) => this.addModule(name, data.responseText));
+};
+
+pypyjs.prototype.addModule = function addModule(name, source) {
+  return this.findImportedNames(source).then((imports) => {
+    this._allModules[name] = {
+      file: `${name}.py`,
+      imports
+    };
+    if (!this.inJsModules) {
+      this.inJsModules = [];
+    }
+    this.inJsModules[`modules/${name}.py`] = source;
+  });
 };
 
 // Method to execute python source directly in the VM.
@@ -811,11 +834,7 @@ pypyjs.prototype.loadModuleData = function loadModuleData(/* names */) {
       this._findModuleDeps(name, toLoad);
     }
 
-    // Now ensure that each module gets loaded.
-    // XXX TODO: we could load these concurrently.
-    let p = Promise.resolve();
-    toLoad.forEach((name) => p = p.then(() => this._loadModuleData(name)));
-    return p;
+    return Promise.all(toLoad.map((name) => this._loadModuleData(name)));
   });
 };
 
