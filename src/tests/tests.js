@@ -36,7 +36,7 @@ const toByteArray = function toByteArray(str) {
   return byteArray;
 };
 
-const stdinBuffer = [];
+let stdinBuffer = [];
 
 const vm = new pypyjs({
   stdin: function stdin() {
@@ -56,7 +56,7 @@ const vm = new pypyjs({
   }
 });
 
-vm.ready()
+const pypyjsTestResult = vm.ready()
 
 // First, check that python-level errors will actually fail the tests.
 .then(() => vm.exec('raise ValueError(42)'))

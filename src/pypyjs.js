@@ -14,7 +14,7 @@ if (typeof console !== 'undefined') {
   debug = print;
 }
 
-let _dirname = __dirname;
+let _dirname;
 
 // Find the directory containing this very file.
 // It can be quite difficult depending on execution environment...
@@ -33,7 +33,7 @@ if (typeof __dirname === 'undefined') {
   }
 }
 
-if (__dirname.charAt(__dirname.length - 1) !== '/') {
+if (_dirname.charAt(_dirname.length - 1) !== '/') {
   _dirname += '/';
 }
 
@@ -314,7 +314,7 @@ function pypyjs(opts) {
     });
 
     let FS;
-    dependenciesFulfilled = function depsFulfilled(_fs) {
+    let dependenciesFulfilled = function depsFulfilled(_fs) {
       FS = _fs;
 
       // Initialize the filesystem state.
@@ -354,7 +354,7 @@ function pypyjs(opts) {
         const modIndex = JSON.parse(xhr.responseText);
         this._allModules = modIndex.modules;
         if (modIndex.preload) {
-          modIndex.preload.forEach((name) => {
+          Object.keys(modIndex.preload).forEach((name) => {
             this._writeModuleFile(name, modIndex.preload[name]);
           });
         }
@@ -483,8 +483,7 @@ pypyjs.prototype._execute_source = function _execute_source(code) {
   const Module = this._module;
   let code_ptr;
   return new Promise(function promise(resolve) {
-    const _code = `
-try:
+    const _code = `try:
   ${code}
 except Exception:
   typ, val, tb = sys.exc_info()
@@ -503,8 +502,8 @@ except Exception:
       throw new pypyjs.Error('Failed to allocate memory');
     }
 
-    pypyjs.resolve = () => {
-      console.log('resolved');
+    Module.resolve = function() {
+      console.log("resolved");
       resolve();
     };
 
@@ -568,7 +567,7 @@ pypyjs.prototype.exec = function exec(code) {
     }
 
     // Now we can execute the code in custom top-level scope.
-    const code_ = `exec ''' ${_escape(code)} ''' in top_level_scope`;
+    const code_ = `exec '''${_escape(code)}''' in top_level_scope`;
     p = p.then(() => {
       return this._execute_source(code_);
     });
@@ -777,31 +776,32 @@ pypyjs.prototype.findImportedNames = function findImportedNames(code) {
   const imports = [];
   importStatementRE.lastIndex = 0;
   const matches = code.match(importStatementRE);
-  matches.forEach((match) => {
-    let relmod = match[2];
-    if (relmod) {
-      relmod = relmod + '.';
-    } else {
-      relmod = '';
-    }
+  if (matches) {
+    matches.forEach((match) => {
+      let relmod = match[2];
+      if (relmod) {
+        relmod = relmod + '.';
+      } else {
+        relmod = '';
+      }
 
-    let submods = match[0].split('import')[1];
-    while (submods && /[\s(]/.test(submods.charAt(0))) {
-      submods = submods.substr(1);
-    }
+      let submods = match[0].split('import')[1];
+      while (submods && /[\s(]/.test(submods.charAt(0))) {
+        submods = submods.substr(1);
+      }
 
-    while (submods && /[\s)]/.test(submods.charAt(submods.length - 1))) {
-      submods = submods.substr(0, submods.length - 1);
-    }
+      while (submods && /[\s)]/.test(submods.charAt(submods.length - 1))) {
+        submods = submods.substr(0, submods.length - 1);
+      }
 
-    submods = submods.split(/\s*,\s*/);
-    for (let i = 0; i < submods.length; i++) {
-      let submod = submods[i];
-      submod = submod.split(/\s*as\s*/)[0];
-      imports.push(relmod + submod);
-    }
-  });
-
+      submods = submods.split(/\s*,\s*/);
+      for (let i = 0; i < submods.length; i++) {
+        let submod = submods[i];
+        submod = submod.split(/\s*as\s*/)[0];
+        imports.push(relmod + submod);
+      }
+    });
+  }
   return Promise.resolve(imports);
 };
 
@@ -834,7 +834,7 @@ pypyjs.prototype.loadModuleData = function loadModuleData(/* names */) {
       this._findModuleDeps(name, toLoad);
     }
 
-    return Promise.all(toLoad.map((name) => this._loadModuleData(name)));
+    return Promise.all(Object.keys(toLoad).map((name) => this._loadModuleData(name)));
   });
 };
 
@@ -927,6 +927,8 @@ pypyjs.prototype._writeModuleFile = function _writeModuleFile(name, data) {
 // XXX TODO: this could be a lot more user-friendly than a opaque error...
 
 pypyjs.Error = function pypyjsError(name, message, trace) {
+  let message_;
+  let name_;
   if (name && typeof message === 'undefined') {
     message_ = name;
     name_ = '';
