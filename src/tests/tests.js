@@ -257,7 +257,7 @@ time.sleep(1)
         .then(() => vm2.reInit())
         .then(() => vm2.get('x'))
         .then((x) => { 
-          if (x) { throw new Error('x should not exist'); 
+          if (x) { throw new Error('x should not exist'); } 
         });
 })
 
