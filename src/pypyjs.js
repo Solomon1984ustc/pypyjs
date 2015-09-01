@@ -314,7 +314,7 @@ function pypyjs(opts) {
     });
 
     let FS;
-    let dependenciesFulfilled = function depsFulfilled(_fs) {
+    const dependenciesFulfilled = function depsFulfilled(_fs) {
       FS = _fs;
 
       // Initialize the filesystem state.
@@ -502,8 +502,8 @@ except Exception:
       throw new pypyjs.Error('Failed to allocate memory');
     }
 
-    Module.resolve = function() {
-      console.log("resolved");
+    Module.resolve = () => {
+      console.log('resolved');
       resolve();
     };
 
@@ -776,7 +776,7 @@ pypyjs.prototype.findImportedNames = function findImportedNames(code) {
   const imports = [];
   let match;
   importStatementRE.lastIndex = 0;
-  while ((match = importStatementRE.exec(code)) !== null) {    
+  while ((match = importStatementRE.exec(code)) !== null) {
     let relmod = match[2];
     if (relmod) {
       relmod = relmod + '.';
@@ -797,7 +797,7 @@ pypyjs.prototype.findImportedNames = function findImportedNames(code) {
     for (let i = 0; i < submods.length; i++) {
       let submod = submods[i];
       submod = submod.split(/\s*as\s*/)[0];
-        imports.push(relmod + submod);
+      imports.push(relmod + submod);
     }
   }
   return Promise.resolve(imports);
