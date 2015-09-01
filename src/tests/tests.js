@@ -56,6 +56,8 @@ const vm = new pypyjs({
   }
 });
 
+let gp;
+
 const pypyjsTestResult = vm.ready()
 
 // First, check that python-level errors will actually fail the tests.
