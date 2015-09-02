@@ -313,13 +313,12 @@ function pypyjs(opts) {
       initializedReject = _reject;
     });
 
-    let FS;
-    const dependenciesFulfilled = function depsFulfilled(_fs) {
-      FS = _fs;
+    const dependenciesFulfilled = (_fs) => {
+      this.FS = _fs;
 
       // Initialize the filesystem state.
       try {
-        FS.init(stdin, stdout, stderr);
+        this.FS.init(stdin, stdout, stderr);
         Module.FS_createPath('/', 'lib/pypyjs/lib_pypy', true, false);
         Module.FS_createPath('/', 'lib/pypyjs/lib-python/2.7', true, false);
         initializedResolve();
@@ -461,6 +460,7 @@ pypyjs.prototype.addModuleFromFile = function addModule(name, file) {
 
 pypyjs.prototype.addModule = function addModule(name, source) {
   return this.findImportedNames(source).then((imports) => {
+    this._loadedModules[name] = null;
     this._allModules[name] = {
       file: `${name}.py`,
       imports
@@ -948,6 +948,10 @@ pypyjs.prototype._writeModuleFile = function _writeModuleFile(name, data) {
 
   // Now we can safely create the file.
   const fullpath = '/lib/pypyjs/lib_pypy/' + file;
+  try {
+    this.FS.unlink(fullpath);
+  } catch (e) {
+  }
   Module.FS_createDataFile(fullpath, '', data, true, false, true);
   this._loadedModules[name] = true;
 };
