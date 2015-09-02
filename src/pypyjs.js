@@ -948,7 +948,10 @@ pypyjs.prototype._writeModuleFile = function _writeModuleFile(name, data) {
 
   // Now we can safely create the file.
   const fullpath = '/lib/pypyjs/lib_pypy/' + file;
-  this.FS.unlink(fullpath);
+  try {
+    this.FS.unlink(fullpath);
+  } catch (e) {
+  }
   Module.FS_createDataFile(fullpath, '', data, true, false, true);
   this._loadedModules[name] = true;
 };
