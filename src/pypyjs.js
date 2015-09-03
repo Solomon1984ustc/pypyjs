@@ -205,6 +205,7 @@ function pypyjs(opts) {
   this._pendingModules = {};
   this._loadedModules = {};
   this._allModules = {};
+  this._modulesToReset = {};
 
   // Allow opts to override default IO streams.
   this.stdin = _opts.stdin || stdio.stdin;
@@ -460,7 +461,11 @@ pypyjs.prototype.addModuleFromFile = function addModule(name, file) {
 
 pypyjs.prototype.addModule = function addModule(name, source) {
   return this.findImportedNames(source).then((imports) => {
-    this._loadedModules[name] = null;
+    // keep track of any modules that have been previously loaded
+    if (this._loadedModules[name]) {
+      this._modulesToReset[name] = true;
+      this._loadedModules[name] = null;
+    }
     this._allModules[name] = {
       file: `${name}.py`,
       imports
@@ -472,18 +477,29 @@ pypyjs.prototype.addModule = function addModule(name, source) {
   });
 };
 
+function _blockIndent(code, indent) {
+  return code.replace(/\n/g, `\n${indent}`);
+}
+
+function _escape(value) {
+  return value.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
+}
+
 // Method to execute python source directly in the VM.
 //
 // This is the basic way to push code into the pypyjs VM.
 // Calling code should not use it directly; rather we use it
 // as a primitive to build up a nicer execution API.
 //
-pypyjs.prototype._execute_source = function _execute_source(code) {
+pypyjs.prototype._execute_source = function _execute_source(code, preCode) {
   console.log('executing: ' + code);
   const Module = this._module;
+  const _preCode = preCode ? preCode : '';
   let code_ptr;
+
   return new Promise(function promise(resolve) {
     const _code = `try:
+  ${_blockIndent(_preCode, '  ')}
   ${code}
 except Exception:
   typ, val, tb = sys.exc_info()
@@ -491,7 +507,6 @@ except Exception:
   err_msg = str(val)
   err_trace = traceback.format_exception(typ, val, tb)
   err_trace = ''.join(err_trace)
-  print err_name
   js.globals['pypyjs']._lastErrorName = err_name
   js.globals['pypyjs']._lastErrorMessage = err_msg
   js.globals['pypyjs']._lastErrorTrace = err_trace
@@ -531,10 +546,6 @@ except Exception:
   });
 };
 
-function _escape(value) {
-  return value.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
-}
-
 // Method to determine when the interpreter is ready.
 //
 // This method returns a promise that will resolve once the interpreter
@@ -554,6 +565,7 @@ pypyjs.prototype.ready = function ready() {
 pypyjs.prototype.exec = function exec(code) {
   return this._ready.then(() => {
     let p = Promise.resolve();
+    let preCode;
 
     // Find any "import" statements in the code,
     // and ensure the modules are ready for loading.
@@ -566,10 +578,27 @@ pypyjs.prototype.exec = function exec(code) {
       });
     }
 
+    // if any modules have been re-added then we need to remove them from
+    // sys.modules which clears them from memory and allows them to be reloaded
+    // from the emscripten file system
+    if (Object.keys(this._modulesToReset).length) {
+      // construct python code to remove module from sys.modules:
+      // ```python
+      //   import sys
+      //   if 'foo' in sys.modules: del(sys.modules['foo'])
+      // ```
+      const modulesToLoad =
+        Object.keys(this._modulesToReset)
+          .map(mod => `if '${mod}' in sys.modules: del(sys.modules['${mod}'])`);
+
+      preCode = `try:\n  import sys\n  ${modulesToLoad.join('\n  ')}\nexcept:\n  raise SystemError('Failed to reload custom modules')`;
+      this._modulesToReset = {};
+    }
+
     // Now we can execute the code in custom top-level scope.
-    const code_ = `exec \'\'\'${_escape(code)}\'\'\' in top_level_scope`;
+    const code_ = `exec '''${_escape(code)}''' in top_level_scope`;
     p = p.then(() => {
-      return this._execute_source(code_);
+      return this._execute_source(code_, preCode);
     });
     return p;
   });
@@ -951,6 +980,10 @@ pypyjs.prototype._writeModuleFile = function _writeModuleFile(name, data) {
   try {
     this.FS.unlink(fullpath);
   } catch (e) {
+    // ignore error
+    if (e) {
+      console.log(e);
+    }
   }
   Module.FS_createDataFile(fullpath, '', data, true, false, true);
   this._loadedModules[name] = true;
