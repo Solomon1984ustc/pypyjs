@@ -744,43 +744,55 @@ pypyjs.prototype.set = function set(name, value) {
 pypyjs.prototype.repl = function repl(prmpt) {
   let _prmpt = prmpt;
   if (!_prmpt) {
-    // If there's a custom stdin, or we're not in nodejs, then we should
-    // default to prompting on stdin/stdout.  For nodejs, we can build
-    // an async prompt atop process.stdin.
-    let buffer = '';
-    if (this.stdin !== devNull.stdin || typeof process === 'undefined') {
-      _prmpt = (ps1) => {
-        let input;
-        this.stdout(ps1);
-        let c = this.stdin();
-        while (c) {
-          const idx = c.indexOf('\n');
-          if (idx >= 0) {
-            input = buffer + c.substr(0, idx + 1);
-            buffer = c.substr(idx + 1);
-            return input;
-          }
-
-          buffer += c;
-          c = this.stdin();
+    // By default we read from the provided stdin function, but unfortunately
+    // it defaults to a closed file.
+    var buffer = "";
+    _prmpt = (ps1) => {
+      var input;
+      this.stdout(ps1);
+      var c = this.stdin();
+      while (c) {
+        var idx = c.indexOf("\n");
+        if (idx >= 0) {
+          var input = buffer + c.substr(0, idx + 1);
+          buffer = c.substr(idx + 1);
+          return input;
         }
-
-        input = buffer;
-        buffer = '';
-        return input;
-      };
+        buffer += c;
+        c = this.stdin();
+      }
+      input = buffer;
+      buffer = "";
+      return input;
+    };
+    // For nodejs, we can do an async prompt atop process.stdin,
+    // unless we're using a custom stdin function.
+    useProcessStdin = true;
+    if (typeof process === "undefined") {
+      useProcessStdin = false;
+    } else if (typeof process.stdin === "undefined") {
+      useProcessStdin = false;
     } else {
+      if (this.stdin !== devNull.stdin) {
+        if (this.stdin !== pypyjs._defaultStdin) {
+          useProcessStdin = false;
+        } else if (pypyjs.stdin !== devNull.stdin) {
+          useProcessStdin = false;
+        }
+      }
+    }
+    if (useProcessStdin) {
       _prmpt = (ps1) => {
-        return new Promise((resolve) => {
+        return new Promise(resolve, reject) => {
           this.stdout(ps1);
-          const slurp = function slurp() {
-            process.stdin.once('readable', () => {
-              let chunk = process.stdin.read();
+          var slurp = function() {
+            process.stdin.once("readable", function() {
+              var chunk = process.stdin.read();
               if (chunk === null) {
                 slurp();
               } else {
                 chunk = chunk.toString();
-                const idx = chunk.indexOf('\n');
+                var idx = chunk.indexOf("\n");
                 if (idx < 0) {
                   buffer += chunk;
                   slurp();
@@ -790,8 +802,7 @@ pypyjs.prototype.repl = function repl(prmpt) {
                 }
               }
             });
-          };
-
+          }
           slurp();
         });
       };
@@ -1026,10 +1037,10 @@ pypyjs.Error.prototype.constructor = pypyjs.Error;
 // will invoke corresponding methods on a default VM instance.
 // This makes it look like 'pypyjs' is a singleton VM instance.
 
-pypyjs._defaultVM = null;
-pypyjs.stdin = stdio.stdin;
-pypyjs.stdout = stdio.stdout;
-pypyjs.stderr = stdio.stderr;
+pypyjs._defaultVM = null
+pypyjs._defaultStdin = () => pypyjs.stdin(...arguments);
+pypyjs._defaultStdout = () => pypyjs.stdout(...arguments);
+pypyjs._defaultStderr = () => pypyjs.stderr(...arguments);
 
 const PUBLIC_NAMES = ['ready', 'exec', 'eval', 'execfile', 'get', 'set',
                     'repl', 'loadModuleData'];
@@ -1038,9 +1049,9 @@ PUBLIC_NAMES.forEach((name) => {
   pypyjs[name] = () => {
     if (!pypyjs._defaultVM) {
       pypyjs._defaultVM = new pypyjs({
-        stdin: () => pypyjs.stdin.apply(this, arguments),
-        stdout: () => pypyjs.stdout.apply(this, arguments),
-        stderr: () => pypyjs.stderr.apply(this, arguments)
+        stdin: pypyjs._defaultStdin,
+        stdout: pypyjs._defaultStdout,
+        stderr: pypyjs._defaultStderr
       });
     }
 
@@ -1051,7 +1062,9 @@ PUBLIC_NAMES.forEach((name) => {
 // For nodejs, run a repl when invoked directly from the command-line.
 if (typeof require !== 'undefined' && typeof module !== 'undefined') {
   if (require.main === module) {
-    pypyjs.repl();
+    pypyjs.repl().catch(function (err) {
+      console.log(err)
+    });;
   }
 }
 
