@@ -501,7 +501,6 @@ function _escape(value) {
 // as a primitive to build up a nicer execution API.
 //
 pypyjs.prototype._execute_source = function _execute_source(code, preCode) {
-  console.log('executing: ' + code);
   const Module = this._module;
   const _preCode = preCode ? preCode : '';
   let code_ptr;
@@ -521,6 +520,7 @@ except Exception:
   js.globals['pypyjs']._lastErrorMessage = err_msg
   js.globals['pypyjs']._lastErrorTrace = err_trace
 `;
+    console.log('executing: ' + _code);
     const code_chars = Module.intArrayFromString(_code);
     code_ptr = Module.allocate(code_chars, 'i8', Module.ALLOC_NORMAL);
     if (!code_ptr) {
@@ -659,7 +659,7 @@ pypyjs.prototype.reInit = function reInit() {
 pypyjs.prototype.eval = function evaluate(expr) {
   return this._ready.then(() => {
     // First try to execute it as an expression.
-    const code = 'r = eval(\'' + _escape(expr) + '\', top_level_scope)';
+    const code = `r = eval('${_escape(expr)}', top_level_scope.__dict__)`;
     return this._execute_source(code);
   }).then(() => this.get('r', true), (err) => {
     if (err && err.name && err.name !== 'SyntaxError') {
@@ -714,13 +714,13 @@ pypyjs.prototype.get = function get(name, _fromGlobals) {
     // NOTE: This code is embedded in another try/except statement by _execute_source() BUT...
     //       the first indentation is added in that function, AND it uses two-space indentation!
     //       When you change this, put a "console.log()" in _execute_source() to make sure it's right
-    var code = `
-try:
+    var code = `try:
     _pypyjs_getting = ${reference}
   except (KeyError, AttributeError):
     _pypyjs_getting = js.undefined
-    js.globals['pypyjs']._resultsMap['${resid}'] = js.convert(_pypyjs_getting)
-    del _pypyjs_getting`
+  
+  js.globals['pypyjs']._resultsMap['${resid}'] = js.convert(_pypyjs_getting)
+  del _pypyjs_getting`
 
     return this._execute_source(code);
   }).then(() => {
@@ -1017,7 +1017,7 @@ pypyjs.prototype._writeModuleFile = function _writeModuleFile(name, data) {
     this.FS.unlink(fullpath);
   } catch (e) {
     // ignore error
-    if (e) {
+    if (!e.errno === 2) {
       console.log(e);
     }
   }
