@@ -374,7 +374,12 @@ function pypyjs(opts) {
           'import js',
           'import sys; sys.platform = \'js\'',
           'import traceback',
-          'top_level_scope = {\'__name__\': \'__main__\'}'
+          'import types',
+          'top_level_scope = {\'__name__\': \'__main__\', \'__package__\': None}',
+          'main = types.ModuleType(\'__main__\')',
+          'main.__dict__.update(top_level_scope)',
+          'sys.modules[\'__main__\'] = main',
+          'top_level_scope = main'
         ];
         initCode.forEach((codeStr) => {
           let code = Module.intArrayFromString(codeStr);
@@ -602,8 +607,8 @@ pypyjs.prototype.exec = function exec(code, options) {
 
     // Now we can execute the code in custom top-level scope.
     const code_ = (options && options.file)
-      ? `top_level_scope['__file__'] = '${options.file}'; execfile('${options.file}', top_level_scope)`
-      : `exec '''${_escape(code)}''' in top_level_scope`;
+      ? `top_level_scope['__file__'] = '${options.file}'; execfile('${options.file}', top_level_scope.__dict__)`
+      : `exec '''${_escape(code)}''' in top_level_scope.__dict__`;
     p = p.then(() => {
       return this._execute_source(code_, preCode);
     });
@@ -697,18 +702,26 @@ pypyjs._resultsID = 0;
 pypyjs._resultsMap = {};
 pypyjs.prototype.get = function get(name, _fromGlobals) {
   const resid = `${(pypyjs._resultsID++)}`;
-  let namespace;
+  let reference;
   // We can read from global scope for internal use; don't do this from calling code!
   if (_fromGlobals) {
-    namespace = 'globals()';
+    reference = `globals()['${_escape(name)}']`;
   } else {
-    namespace = 'top_level_scope';
+    reference = `top_level_scope.${_escape(name)}`;
   }
 
   return this._ready.then(() => {
-    let code = `${namespace}.get('${_escape(name)}', js.undefined)`;
-    code = `js.convert(${code})`;
-    code = `js.globals['pypyjs']._resultsMap['${resid}'] = ${code}`;
+    // NOTE: This code is embedded in another try/except statement by _execute_source() BUT...
+    //       the first indentation is added in that function, AND it uses two-space indentation!
+    //       When you change this, put a "console.log()" in _execute_source() to make sure it's right
+    var code = `
+try:
+    _pypyjs_getting = ${reference}
+  except (KeyError, AttributeError):
+    _pypyjs_getting = js.undefined
+    js.globals['pypyjs']._resultsMap['${resid}'] = js.convert(_pypyjs_getting)
+    del _pypyjs_getting`
+
     return this._execute_source(code);
   }).then(() => {
     const res = pypyjs._resultsMap[resid];
@@ -727,7 +740,7 @@ pypyjs.prototype.set = function set(name, value) {
     const Module = this._module;
     const h = Module._emjs_make_handle(value);
     const name_ = _escape(name);
-    const code = `top_level_scope['${name_}'] = js.Value(${h})`;
+    const code = `top_level_scope.${name} = js.Value(${h})`;
     return this._execute_source(code);
   });
 };

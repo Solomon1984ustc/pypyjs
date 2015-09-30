@@ -191,12 +191,21 @@ const pypyjsTestResult = vm.ready()
     throw new Error('Python exception didn\'t trigger correct error info');
   }
 })
-
+// - for globals()
 // Check that we can read non-existent names and get 'undefined'
 .then(() => vm.get('nonExistentName'))
 .then((x) => {
   if (typeof x !== 'undefined') {
     throw new Error('name should have been undefined');
+  }
+})
+// Check that get() propagates errors other than involved in getting the variable.
+.then(() => pypyjs.get("__name__ + 5"))
+.catch((exc) => {
+  if (typeof exc === "undefined") {
+    throw new Error("expected to receive an exception");
+  } else if ("TypeError" !== exc.name) {
+    throw new Error("expected to receive a TypeError");
   }
 })
 
