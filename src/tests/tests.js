@@ -238,6 +238,7 @@ import time
 time.sleep(1)
   `).then(() => vm.exec('import testerdetest'));
 })
+// exec file
 .then(() => vm.execfile('example.py'))
 // Check that multi-import statements will work correctly.
 .then(() => vm.exec('import os\nimport time\nimport sys\nx=time.time()'))

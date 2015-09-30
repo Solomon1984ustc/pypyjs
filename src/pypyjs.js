@@ -796,7 +796,7 @@ pypyjs.prototype.repl = function repl(prmpt) {
     }
     if (useProcessStdin) {
       _prmpt = (ps1) => {
-        return new Promise(resolve, reject) => {
+        return new Promise((resolve, reject) => {
           this.stdout(ps1);
           var slurp = function() {
             process.stdin.once("readable", function() {
