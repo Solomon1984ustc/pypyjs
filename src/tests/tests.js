@@ -229,6 +229,7 @@ import time
 time.sleep(1)
   `).then(() => vm.exec('import testerdetest'));
 })
+.then(() => vm.execfile('example.py'))
 // Check that multi-import statements will work correctly.
 .then(() => vm.exec('import os\nimport time\nimport sys\nx=time.time()'))
 .then(() => vm.get('x'))
@@ -256,8 +257,8 @@ time.sleep(1)
         })
         .then(() => vm2.reInit())
         .then(() => vm2.get('x'))
-        .then((x) => { 
-          if (x) { throw new Error('x should not exist'); } 
+        .then((x) => {
+          if (x) { throw new Error('x should not exist'); }
         });
 })
 
