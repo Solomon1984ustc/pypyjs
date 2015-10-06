@@ -368,31 +368,29 @@ function pypyjs(opts) {
         Module._pypy_setup_home(pypy_home, 0);
         Module._free(pypy_home);
 
-        const initCode = [
-          'import js',
-          'import sys; sys.platform = \'js\'',
-          'import traceback',
-          'import types',
-          'top_level_scope = {\'__name__\': \'__main__\', \'__package__\': None}',
-          'main = types.ModuleType(\'__main__\')',
-          'main.__dict__.update(top_level_scope)',
-          'sys.modules[\'__main__\'] = main',
-          'top_level_scope = main',
-        ];
-        initCode.forEach((codeStr) => {
-          let code = Module.intArrayFromString(codeStr);
-          code = Module.allocate(code, 'i8', Module.ALLOC_NORMAL);
-          if (!code) {
-            throw new pypyjs.Error('Failed to allocate memory');
-          }
+        const initCode = `
+          import js
+          import sys; sys.platform = 'js'
+          import traceback
+          import types
+          top_level_scope = {'__name__': '__main__', '__package__': None}
+          main = types.ModuleType('__main__')
+          main.__dict__.update(top_level_scope)
+          sys.modules['__main__'] = main
+          top_level_scope = main`;
 
-          const res = Module._pypy_execute_source(code);
-          if (res < 0) {
-            throw new pypyjs.Error('Failed to execute python code');
-          }
+        let code = Module.intArrayFromString(initCode);
+        code = Module.allocate(code, 'i8', Module.ALLOC_NORMAL);
+        if (!code) {
+          throw new pypyjs.Error('Failed to allocate memory');
+        }
 
-          Module._free(code);
-        });
+        const res = Module._pypy_execute_source(code);
+        if (res < 0) {
+          throw new pypyjs.Error('Failed to execute python code');
+        }
+
+        Module._free(code);
       });
     })
     .then(resolve, reject);
@@ -506,7 +504,7 @@ pypyjs.prototype._execute_source = function _execute_source(code) {
   const Module = this._module;
   let code_ptr;
 
-  return new Promise(function promise(resolve, reject) {
+  return new Promise(function promise(resolve) {
     const _code = `try:
   ${code.trim()}
 except Exception:
@@ -527,11 +525,15 @@ except Exception:
       throw new pypyjs.Error('Failed to allocate memory');
     }
 
+    Module.resolve = () => {
+      resolve();
+    };
+
     const res = Module._pypy_execute_source(code_ptr);
     if (res < 0) {
       throw new pypyjs.Error('Error executing python code');
     }
-
+  }).then(() => {
     Module._free(code_ptr);
 
     // XXX TODO: races/re-entrancy on _lastError?
@@ -544,10 +546,10 @@ except Exception:
       pypyjs._lastErrorName = null;
       pypyjs._lastErrorMessage = null;
       pypyjs._lastErrorTrace = null;
-      reject(err);
+      throw err;
     }
 
-    resolve(null);
+    return null;
   });
 };
 
@@ -651,6 +653,10 @@ top_level_scope = main`;
       throw new pypyjs.Error('Failed to allocate memory');
     }
 
+    Module.resolve = () => {
+      resolve();
+    };
+
     // exec
     const res = Module._pypy_execute_source(code);
 
@@ -659,8 +665,6 @@ top_level_scope = main`;
     }
 
     Module._free(code);
-
-    resolve();
   });
 };
 
