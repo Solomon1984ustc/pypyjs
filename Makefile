@@ -28,7 +28,7 @@
 # we run as root, assuming the curdir is under /Users, and hence that
 # boot2docker will automagically share it with appropriate permissions.
 
-DOCKER_IMAGE = rfkelly/pypyjs-build
+DOCKER_IMAGE = trinketio/pypyjs
 
 DOCKER_ARGS = -ti --rm -v /tmp:/tmp -v $(CURDIR):$(CURDIR) -w $(CURDIR) -e "CFLAGS=$$CFLAGS" -e "LDFLAGS=$$LDFLAGS" -e "EMCFLAGS=$$EMCFLAGS" -e "EMLDFLAGS=$$EMLDFLAGS" -e "IN_DOCKER=1"
 
@@ -62,8 +62,8 @@ PYPY = $(DOCKER) pypy
 lib: ./lib/pypyjs.vm.js
 
 ./lib/pypyjs.vm.js: ./build/pypyjs.vm.js
-	cp ./build/pypyjs.vm.js ./lib/
-	python ./tools/extract_memory_initializer.py ./lib/pypyjs.vm.js
+	cp ./build/pypyjs.vm.* ./lib/
+	#python ./tools/extract_memory_initializer.py ./lib/pypyjs.vm.js
 	python ./tools/compress_memory_initializer.py ./lib/pypyjs.vm.js
 	rm -rf ./lib/modules/
 	python tools/module_bundler.py init ./lib/modules/
@@ -115,7 +115,7 @@ release-debug: ./build/pypyjs-debug-$(VERSION).tar.gz
 ./build/pypyjs.vm.js:
 	mkdir -p build
 	$(PYPY) ./deps/pypy/rpython/bin/rpython --backend=js --opt=jit --translation-backendopt-remove_asserts --inline-threshold=25 --output=./build/pypyjs.vm.js ./deps/pypy/pypy/goal/targetpypystandalone.py
-
+  cp /tmp/usession-unknown-current/testing_1/pypyjs.vm.js.mem ./build/
 
 # This builds a debugging-friendly version that is bigger but has e.g.
 # more asserts and better traceback information.
