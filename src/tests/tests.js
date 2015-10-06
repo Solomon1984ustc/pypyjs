@@ -56,7 +56,7 @@ const vm = new pypyjs({
   }
 });
 
-let gp;
+let gp; // eslint-disable-line no-unused-vars
 
 const pypyjsTestResult = vm.ready();
 
