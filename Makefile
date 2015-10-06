@@ -115,7 +115,7 @@ release-debug: ./build/pypyjs-debug-$(VERSION).tar.gz
 ./build/pypyjs.vm.js:
 	mkdir -p build
 	$(PYPY) ./deps/pypy/rpython/bin/rpython --backend=js --opt=jit --translation-backendopt-remove_asserts --inline-threshold=25 --output=./build/pypyjs.vm.js ./deps/pypy/pypy/goal/targetpypystandalone.py
-  cp /tmp/usession-unknown-current/testing_1/pypyjs.vm.js.mem ./build/
+	cp /tmp/usession-unknown-current/testing_1/pypyjs.vm.js.mem ./build/
 
 # This builds a debugging-friendly version that is bigger but has e.g.
 # more asserts and better traceback information.
