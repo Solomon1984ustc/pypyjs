@@ -20,8 +20,43 @@ if (typeof console !== 'undefined') {
 } else {
   log = print;
 }
+const toByteArray = function toByteArray(str) {
+  const byteArray = [];
+  for (let i = 0; i < str.length; i++) {
+    if (str.charCodeAt(i) <= 0x7F) {
+      byteArray.push(str.charCodeAt(i));
+    } else {
+      const h = encodeURIComponent(str.charAt(i)).substr(1).split('%');
+      for (let j = 0; j < h.length; j++) {
+        byteArray.push(parseInt(h[j], 16));
+      }
+    }
+  }
 
-const vm = new pypyjs();
+  return byteArray;
+};
+
+let stdinBuffer = [];
+
+const vm = new pypyjs({
+  stdin: function stdin() {
+    if (stdinBuffer.length > 0) {
+      return stdinBuffer.pop();
+    }
+
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const input = toByteArray('test\n');
+        input.push(null);
+        input.reverse();
+        stdinBuffer = input;
+        resolve(stdinBuffer.pop());
+      }, 1000);
+    });
+  }
+});
+
+let gp;
 
 const pypyjsTestResult = vm.ready();
 
@@ -55,7 +90,107 @@ pypyjsTestResult
     throw new Error('eval failed');
   }
 })
+.then(() => vm.exec('from time import sleep; sleep(1)'))
+.then(() => {
+  const test = [
+    'from time import sleep',
+    'def Test():',
+    '    sleep(1)',
+    '',
+    'Test()',
+    'class Test2:',
+    '    def __init__(self):',
+    '        sleep(1)',
+    '    def sleepy(self):',
+    '        sleep(1)',
+    '',
+    'a = Test2()',
+    'a.sleepy()',
+    '',
+    'usleep = lambda x: sleep(x/1000000.0)',
+    'usleep(100) #sleep during 100μs',
+    '',
+  ].join('\r\n');
 
+  return vm.exec(test);
+}).then(() => {
+  const test = [
+    'from time import sleep',
+    '',
+    'def sleep_decorator(function):',
+    '',
+    '    def wrapper(*args, **kwargs):',
+    '        sleep(2)',
+    '        return function(*args, **kwargs)',
+    '    return wrapper',
+    '',
+    '@sleep_decorator',
+    'def print_number(num):',
+    '    return num',
+    '',
+    'print print_number(222)',
+    '',
+    'for x in range(1,6):',
+    '    print print_number(x)',
+    '',
+  ].join('\r\n');
+
+  return vm.exec(test);
+})
+.then(() => {
+  gp = () => {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve('test'), 1000);
+    });
+  };
+
+  const test = [
+    'import js',
+    'from time import time',
+    '',
+    'print time()',
+    'get_promise = js.eval(\'gp\')',
+    'promise = get_promise()',
+    'res = js.await(promise)',
+    'print time()',
+    'print res',
+    'assert res == \'test\'',
+  ].join('\r\n');
+
+  return vm.exec(test);
+})
+.then(() => {
+  gp = () => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => reject(new Error('test!')), 1000);
+    });
+  };
+
+  const test = [
+    'import js',
+    'from time import time',
+    '',
+    'print time()',
+    'get_promise = js.eval(\'gp\')',
+    'promise = get_promise()',
+    'res = js.await(promise)',
+    'print time()',
+  ].join('\r\n');
+
+  return vm.exec(test);
+}).then(() => {
+  throw new Error('Python exception did not trigger js Error');
+},
+(err) => {
+  if (!err instanceof pypyjs.Error) {
+    throw new Error('Python exception didn\'t trigger vm.Error instance');
+  }
+
+  if (err.name !== 'Error' || err.message !== 'Error: test!') {
+    console.log(err);
+    throw new Error('Python exception didn\'t trigger correct error info');
+  }
+})
 // Check that we can read non-existent names and get 'undefined'
 .then(() => vm.get('nonExistentName'))
 .then((x) => {
@@ -117,6 +252,20 @@ assert time.time() > 0`).then(() => vm.exec('import testmodule'));
 })
 .then(() => {
   return vm.addModuleFromFile('testmodule2', 'tests/test_module.py').then(() => vm.exec('import testmodule2'));
+})
+.then(() => {
+  const test = [
+    'a = raw_input()',
+    'print a',
+    'assert a == \'test\'',
+  ].join('\r\n');
+  return vm.exec(test);
+})
+.then(() => {
+  return vm.addModule('testerdetest', `
+import time
+time.sleep(1)
+  `).then(() => vm.exec('import testerdetest'));
 })
 // Check that you can create additional VMs using `new`
 .then(() => {
