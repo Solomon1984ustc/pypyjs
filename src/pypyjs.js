@@ -369,15 +369,15 @@ function pypyjs(opts) {
         Module._free(pypy_home);
 
         const initCode = `
-          import js
-          import sys; sys.platform = 'js'
-          import traceback
-          import types
-          top_level_scope = {'__name__': '__main__', '__package__': None}
-          main = types.ModuleType('__main__')
-          main.__dict__.update(top_level_scope)
-          sys.modules['__main__'] = main
-          top_level_scope = main`;
+import js
+import sys; sys.platform = 'js'
+import traceback
+import types
+top_level_scope = {'__name__': '__main__', '__package__': None}
+main = types.ModuleType('__main__')
+main.__dict__.update(top_level_scope)
+sys.modules['__main__'] = main
+top_level_scope = main`;
 
         let code = Module.intArrayFromString(initCode);
         code = Module.allocate(code, 'i8', Module.ALLOC_NORMAL);
@@ -625,9 +625,11 @@ except:
       _code = `exec '''${_escape(code)}''' in top_level_scope.__dict__`;
     }
 
+    if (preCode) {
+      promise = promise.then(() => this._execute_source(_blockIndent(preCode)));
+    }
 
-    promise = promise.then(() => this._execute_source(_blockIndent(preCode)).then(() => this._execute_source(_code)));
-    return promise;
+    return promise.then(() => this._execute_source(_code));
   });
 };
 

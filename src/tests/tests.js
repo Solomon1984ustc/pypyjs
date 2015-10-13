@@ -2,8 +2,6 @@
 // A very minimal testsuite for the PyPy.js shell code.
 // We should do something a lot nicer than this...
 //
-let pypyjs;
-
 if (typeof pypyjs === 'undefined') {
   if (typeof require !== 'undefined') {
     pypyjs = require('../pypyjs.js');
