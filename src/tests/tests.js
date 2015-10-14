@@ -242,14 +242,19 @@ pypyjsTestResult
 })
 // add module from js that imports modules
 .then(() => {
-  return vm.addModule('testmodule', `
+  return vm.addFileWithContent('testmodule.py', `
 import time
 import sys
 import os
 assert time.time() > 0`).then(() => vm.exec('import testmodule'));
 })
 .then(() => {
-  return vm.addModuleFromFile('testmodule2', 'tests/test_module.py').then(() => vm.exec('import testmodule2'));
+  return vm.addFile('tests/test_module.py', 'test_module.py').then(() => vm.exec('import test_module'));
+})
+.then(() => {
+  return vm.addFile('tests/test_module.py')
+      .then(() => vm.addFileWithContent('#dud', 'tests/__init__.py'))
+      .then(() => vm.exec('import tests'));
 })
 .then(() => {
   const test = [

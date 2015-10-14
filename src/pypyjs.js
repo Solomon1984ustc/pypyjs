@@ -460,30 +460,31 @@ pypyjs.prototype.fetch = function fetch(relpath, responseType) {
   });
 };
 
-// add a Module to the vm from a file so you can import it later. Uses a path
-// relative to pypyjs.
-pypyjs.prototype.addModuleFromFile = function addModuleFromFile(name, file) {
-  return this.fetch(file).then((data) => this.addModule(name, data.responseText));
+pypyjs.prototype.addFile = function addFile(file, dest) {
+  const _dest = dest ? `/lib/pypyjs/${dest}` : `/lib/pypyjs/${file}`;
+
+  // todo make sure the directory is there.
+  return this.fetch(file).then((data) => {
+    this.addFileWithContent(data, _dest);
+  });
 };
 
-// add a Module to the vm from javascript. It will automatically write it to
-// the "disk" when you import it in your code later.
-pypyjs.prototype.addModule = function addModule(name, source) {
-  return this.findImportedNames(source).then((imports) => {
-    // keep track of any modules that have been previously loaded
-    if (this._loadedModules[name]) {
-      this._modulesToReset[name] = true;
-      this._loadedModules[name] = null;
+pypyjs.prototype.addFileWithContent = function addFileWithContent(content, dest) {
+  const _dest = `/lib/pypyjs/${dest}`;
+  return new Promise((resolve, reject) => {
+    // todo make sure the directory is there.
+    try {
+      this._module.FS_createDataFile(_dest, '', content, true, false, true);
+      resolve();
+    } catch (e) {
+      reject(e);
     }
-    this._allModules[name] = {
-      file: `${name}.py`,
-      imports
-    };
-    if (!this.inJsModules) {
-      this.inJsModules = {};
-    }
-    this.inJsModules[`modules/${name}.py`] = source;
   });
+};
+
+pypyjs.prototype.deleteFile = function deleteFile(file) {
+  // make the errors a bit more sane
+  this._module.FS.unlink(file);
 };
 
 function _blockIndent(code, indent) {
@@ -583,29 +584,6 @@ pypyjs.prototype.exec = function exec(code, options) {
       .then((imports) => {
         return this.loadModuleData.apply(this, imports);
       });
-    }
-
-    // if any modules have been re-added then we need to remove them from
-    // sys.modules which clears them from memory and allows them to be reloaded
-    // from the emscripten file system
-    if (Object.keys(this._modulesToReset).length) {
-      // construct python code to remove module from sys.modules:
-      // ```python
-      //   import sys
-      //   if 'foo' in sys.modules: del(sys.modules['foo'])
-      // ```
-      const modulesToLoad =
-        Object.keys(this._modulesToReset)
-          .map(mod => `if '${mod}' in sys.modules: del(sys.modules['${mod}'])`);
-
-      preCode = `
-try:
-  import sys
-  ${modulesToLoad.join('\n  ')}
-except:
-  raise SystemError('Failed to reload custom modules')`;
-
-      this._modulesToReset = {};
     }
 
     let _code;
