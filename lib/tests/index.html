@@ -13,8 +13,9 @@
   <script src="../pypyjs.js" type="text/javascript" charset="utf-8"></script>
   <script src="./tests.js" type="text/javascript" charset="utf-8"></script>
   <script>
+      var start = Date.now();
       pypyjsTestResult.then(function() {
-        document.getElementById("results").innerHTML = "Tests passed";
+        document.getElementById("results").innerHTML = "Tests passed in (" + (Date.now() - start)/1000 + " seconds)";
       }, function(err) {
         document.getElementById("results").innerHTML = "Tests failed: " + err;
       });
