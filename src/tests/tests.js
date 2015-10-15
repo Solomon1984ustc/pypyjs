@@ -56,10 +56,9 @@ const vm = new pypyjs({
 
 let gp; // eslint-disable-line no-unused-vars
 
-const pypyjsTestResult = vm.ready();
+const pypyjsTestResult = vm.ready() // eslint-disable-line no-unused-vars
 
 // First, check that python-level errors will actually fail the tests.
-pypyjsTestResult
 .then(() => vm.exec('raise ValueError(42)'))
 .then(() => { throw new Error('Python exception did not trigger js Error'); },
 (err) => {
