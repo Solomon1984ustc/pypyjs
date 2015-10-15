@@ -248,12 +248,12 @@ import os
 assert time.time() > 0`, 'testmodule.py').then(() => vm.exec('import testmodule'));
 })
 .then(() => {
-  return vm.addFile('tests/test_module.py', 'test_module.py').then(() => vm.exec('import test_module'));
+  return vm.addFile('tests/test_module.py', 'test_module.py').then(() => vm.exec('import test_module', { file: 'main.py' } ));
 })
 .then(() => {
   return vm.addFile('tests/test_module.py')
       .then(() => vm.addFileWithContent('#dud', 'tests/__init__.py'))
-      .then(() => vm.exec('import tests'));
+      .then(() => vm.exec('import tests', { file: 'main.py' } ));
 })
 .then(() => {
   const test = [
