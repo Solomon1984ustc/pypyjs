@@ -245,7 +245,7 @@ const pypyjsTestResult = vm.ready() // eslint-disable-line no-unused-vars
 import time
 import sys
 import os
-assert time.time() > 0`, 'testmodule.py').then(() => vm.exec('import testmodule'));
+assert time.time() > 0`, 'testmodule.py').then(() => vm.exec('import testmodule', { file: 'main.py' }));
 })
 .then(() => {
   return vm.addFile('tests/test_module.py', 'test_module.py').then(() => vm.exec('import test_module', { file: 'main.py' } ));

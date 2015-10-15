@@ -589,15 +589,15 @@ pypyjs.prototype.exec = function exec(code, options) {
 
     if (options && options.file) {
       try {
-        this.Module.FS.unlink(options.file);
+        this._module.FS_unlink(options.file);
       } catch (e) {
         if (e.errno !== 2) {
           console.error(e);
         }
       }
-      this.Module.FS_createDataFile(options.file, '', code, true, false, true);
+      this._module.FS_createDataFile(options.file, '', code, true, false, true);
       // Now we can execute the code in custom top-level scope.
-      _code = `top_level_scope['__file__'] = '${options.file}'; execfile('${options.file}', top_level_scope.__dict__)`;
+      _code = `top_level_scope.__dict__['__file__'] = '${options.file}'; execfile('${options.file}', top_level_scope.__dict__)`;
     } else {
       _code = `exec '''${_escape(code)}''' in top_level_scope.__dict__`;
     }
