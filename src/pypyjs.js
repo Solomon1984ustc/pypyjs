@@ -461,7 +461,7 @@ pypyjs.prototype.fetch = function fetch(relpath, responseType) {
 };
 
 pypyjs.prototype.addFile = function addFile(file, dest) {
-  const _dest = dest ? `/lib/pypyjs/${dest}` : `/lib/pypyjs/${file}`;
+  const _dest = dest ? dest : file;
 
   // todo make sure the directory is there.
   return this.fetch(file).then((data) => {
@@ -470,11 +470,10 @@ pypyjs.prototype.addFile = function addFile(file, dest) {
 };
 
 pypyjs.prototype.addFileWithContent = function addFileWithContent(content, dest) {
-  const _dest = `/lib/pypyjs/${dest}`;
   return new Promise((resolve, reject) => {
     // todo make sure the directory is there.
     try {
-      this._module.FS_createDataFile(_dest, '', content, true, false, true);
+      this._module.FS_createDataFile(dest, '', content, true, false, true);
       resolve();
     } catch (e) {
       reject(e);
