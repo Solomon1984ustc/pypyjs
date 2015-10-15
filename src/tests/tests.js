@@ -206,7 +206,7 @@ pypyjsTestResult
 
 // Check that get() propagates errors other than involved in getting the variable.
 .then(() => vm.get('__name__ + 5'))
-.catch((exc) => {
+.then(() => null, (exc) => {
   if (typeof exc === 'undefined') {
     throw new Error('expected to receive an exception');
   } else if (exc.name !== 'TypeError') {
@@ -242,11 +242,11 @@ pypyjsTestResult
 })
 // add module from js that imports modules
 .then(() => {
-  return vm.addFileWithContent('testmodule.py', `
+  return vm.addFileWithContent(`
 import time
 import sys
 import os
-assert time.time() > 0`).then(() => vm.exec('import testmodule'));
+assert time.time() > 0`, 'testmodule.py').then(() => vm.exec('import testmodule'));
 })
 .then(() => {
   return vm.addFile('tests/test_module.py', 'test_module.py').then(() => vm.exec('import test_module'));
