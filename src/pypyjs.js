@@ -323,6 +323,7 @@ function pypyjs(opts) {
         this.FS.init(stdin, stdout, stderr);
         Module.FS_createPath('/', 'lib/pypyjs/lib_pypy', true, false);
         Module.FS_createPath('/', 'lib/pypyjs/lib-python/2.7', true, false);
+        this.FS.chdir('/lib/pypyjs');
         initializedResolve();
       } catch (err) {
         initializedReject(err);
@@ -373,6 +374,7 @@ import js
 import sys; sys.platform = 'js'
 import traceback
 import types
+sys.path.append('/lib/pypyjs')
 top_level_scope = {'__name__': '__main__', '__package__': None}
 main = types.ModuleType('__main__')
 main.__dict__.update(top_level_scope)
@@ -470,10 +472,13 @@ pypyjs.prototype.addFile = function addFile(file, dest) {
 };
 
 pypyjs.prototype.addFileWithContent = function addFileWithContent(content, dest) {
+  //dist.splt('/') - 1 --> FS_createPath(wat er over is)
+  const _dest = `/lib/pypyjs/${dest}`;
+
   return new Promise((resolve, reject) => {
     // todo make sure the directory is there.
     try {
-      this._module.FS_createDataFile(dest, '', content, true, false, true);
+      this._module.FS_createDataFile(_dest, '', content, true, false, true);
       resolve();
     } catch (e) {
       reject(e);
