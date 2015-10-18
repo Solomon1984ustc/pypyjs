@@ -202,7 +202,6 @@ function pypyjs(opts) {
   this._pendingModules = {};
   this._loadedModules = {};
   this._allModules = {};
-  this._modulesToReset = {};
 
   // Allow opts to override default IO streams.
   this.stdin = _opts.stdin || stdio.stdin;
