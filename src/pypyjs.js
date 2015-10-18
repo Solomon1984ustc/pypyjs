@@ -399,19 +399,11 @@ top_level_scope = main`;
   });
 }
 
-pypyjs.prototype.inJsModules = null;
-
 // A simple file-fetching wrapper around XMLHttpRequest,
 // that treats paths as relative to the pypyjs.js root url.
 //
 pypyjs.prototype.fetch = function fetch(relpath, responseType) {
   const rootURL = this.rootURL || pypyjs.rootURL;
-
-  if (this.inJsModules && this.inJsModules[relpath]) {
-    return new Promise((resolve) => {
-      resolve({ responseText: this.inJsModules[relpath] });
-    });
-  }
 
   // For the web, use XMLHttpRequest.
   if (typeof XMLHttpRequest !== 'undefined') {
@@ -686,14 +678,10 @@ pypyjs.prototype.eval = function evaluate(expr) {
 // This fetches the named file and passes it to the VM for execution.
 //
 pypyjs.prototype.execfile = function execfile(filename) {
-  const _path = this.inJsModules[`modules/${filename}`]
-    ? `modules/${filename}`
-    : filename;
-
-  return this.fetch(_path).then((xhr) => {
+  return this.fetch(filename).then((xhr) => {
     const code = xhr.responseText;
 
-    return this.exec(code, { file: `/lib/pypyjs/lib_pypy/${filename}` });
+    return this.exec(code, { file: `/lib/pypyjs/${filename}` });
   });
 };
 
