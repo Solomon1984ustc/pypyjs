@@ -278,13 +278,6 @@ assert time.time() > 0`, 'testmodule.py').then(() => vm.exec('import testmodule'
           if (typeof y !== 'undefined') {
             throw new Error('name should have been undefined in new VM');
           }
-        })
-        .then(() => vm2.reInit())
-        .then(() => vm2.get('x'))
-        .then((x) => {
-          if (typeof x !== 'undefined') {
-            throw new Error('name should have been undefined in new VM');
-          }
         });
 })
 
