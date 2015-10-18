@@ -35,22 +35,20 @@ let Promise;
 let FunctionPromise;
 
 // Ensure we have reference to a 'Promise' constructor.
-if (typeof Promise === 'undefined') {
-  if (this && typeof this.Promise !== 'undefined') {
-    Promise = this.Promise;
-  } else if (typeof require === 'function') {
-    Promise = require('./Promise.min.js');
-  } else if (typeof load === 'function') {
-    load(_dirname + 'Promise.min.js');
-    if (typeof Promise === 'undefined') {
-      if (this && typeof this.Promise !== 'undefined') {
-        Promise = this.Promise;
-      }
+if (global && typeof global.Promise !== 'undefined') {
+  Promise = global.Promise;
+} else if (typeof require === 'function') {
+  Promise = require('./Promise.min.js');
+} else if (typeof load === 'function') {
+  load(_dirname + 'Promise.min.js');
+  if (typeof Promise === 'undefined') {
+    if (this && typeof this.Promise !== 'undefined') {
+      Promise = this.Promise;
     }
-  } else if (typeof window !== 'undefined') {
-    if (typeof window.Promise !== 'undefined') {
-      Promise = window.Promise;
-    }
+  }
+} else if (typeof window !== 'undefined') {
+  if (typeof window.Promise !== 'undefined') {
+    Promise = window.Promise;
   }
 }
 
@@ -59,22 +57,20 @@ if (typeof Promise === 'undefined') {
 }
 
 // Ensure we have reference to a 'FunctionPromise' constructor.
-if (typeof FunctionPromise === 'undefined') {
-  if (this && typeof this.FunctionPromise !== 'undefined') {
-    FunctionPromise = this.FunctionPromise;
-  } else if (typeof require === 'function') {
-    FunctionPromise = require('./FunctionPromise.js');
-  } else if (typeof load === 'function') {
-    load(_dirname + 'FunctionPromise.js');
-    if (typeof FunctionPromise === 'undefined') {
-      if (this && typeof this.FunctionPromise !== 'undefined') {
-        FunctionPromise = this.FunctionPromise;
-      }
+if (global && typeof global.FunctionPromise !== 'undefined') {
+  FunctionPromise = global.FunctionPromise;
+} else if (typeof require === 'function') {
+  FunctionPromise = require('./FunctionPromise.js');
+} else if (typeof load === 'function') {
+  load(_dirname + 'FunctionPromise.js');
+  if (typeof FunctionPromise === 'undefined') {
+    if (this && typeof this.FunctionPromise !== 'undefined') {
+      FunctionPromise = this.FunctionPromise;
     }
-  } else if (typeof window !== 'undefined') {
-    if (typeof window.FunctionPromise !== 'undefined') {
-      FunctionPromise = window.FunctionPromise;
-    }
+  }
+} else if (typeof window !== 'undefined') {
+  if (typeof window.FunctionPromise !== 'undefined') {
+    FunctionPromise = window.FunctionPromise;
   }
 }
 
