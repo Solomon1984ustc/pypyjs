@@ -454,6 +454,10 @@ pypyjs.prototype.fetch = function fetch(relpath, responseType) {
   });
 };
 
+// Add a file to the vfs in the "home" directory of pypyjs letting the user import
+// it. If no destination is specified the file is saved at the same location.
+//
+// returns a promise
 pypyjs.prototype.addFile = function addFile(file, dest) {
   const _dest = dest ? dest : file;
 
@@ -463,9 +467,17 @@ pypyjs.prototype.addFile = function addFile(file, dest) {
   });
 };
 
+// Add a file to the vfs with the content specified to the location specfied in the
+// pypyjs home directory
+//
+// returns a promise.
 pypyjs.prototype.addFileWithContent = function addFileWithContent(content, dest) {
-  //dist.splt('/') - 1 --> FS_createPath(wat er over is)
-  const _dest = `/lib/pypyjs/${dest}`;
+  // strip leading slash
+  const _dest = `/lib/pypyjs/${dest.replace(/^\//, '')}`;
+
+  // ensure path is created
+  const _path = _dest.split('/').slice(0, -1).join('/').replace(/^\//, '');
+  this._module.FS_createPath('/', _path, true, true);
 
   return new Promise((resolve, reject) => {
     // todo make sure the directory is there.
@@ -490,6 +502,7 @@ function _blockIndent(code, indent) {
 function _escape(value) {
   return value.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
 }
+
 
 // Method to execute python source directly in the VM.
 //
