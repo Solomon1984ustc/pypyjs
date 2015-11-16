@@ -35,9 +35,9 @@ let Promise;
 let FunctionPromise;
 
 // Ensure we have reference to a 'Promise' constructor.
-if (global && typeof global.Promise !== 'undefined') {
+if (typeof global !== 'undefined' && global && typeof global.Promise !== 'undefined') {
   Promise = global.Promise;
-} else if (typeof require === 'function') {
+} else if (typeof module !== 'undefined' && module.exports) {
   Promise = require('./Promise.min.js');
 } else if (typeof load === 'function') {
   load(_dirname + 'Promise.min.js');
@@ -57,9 +57,9 @@ if (typeof Promise === 'undefined') {
 }
 
 // Ensure we have reference to a 'FunctionPromise' constructor.
-if (global && typeof global.FunctionPromise !== 'undefined') {
+if (typeof global !== 'undefined' && global && typeof global.FunctionPromise !== 'undefined') {
   FunctionPromise = global.FunctionPromise;
-} else if (typeof require === 'function') {
+} else if (typeof module !== 'undefined' && module.exports) {
   FunctionPromise = require('./FunctionPromise.js');
 } else if (typeof load === 'function') {
   load(_dirname + 'FunctionPromise.js');
@@ -267,7 +267,7 @@ function pypyjs(opts) {
     Module.thisProgram = '/lib/pypyjs/pypyjs.js';
     Module.filePackagePrefixURL = this.rootURL || pypyjs.rootURL;
     Module.memoryInitializerPrefixURL = this.rootURL || pypyjs.rootURL;
-    Module.locateFile = function locateFile(name) {
+    Module.locateFile = (name) => {
       return (this.rootURL || pypyjs.rootURL) + name;
     };
 
